@@ -5,7 +5,8 @@ import {
   getServiceRequestById,
   updateServiceRequest,
   addComment,
-  markReplyAsSeen
+  markReplyAsSeen,
+  deleteServiceRequest
 } from '../controllers/serviceRequestController.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import { upload } from '../config/cloudinary.js';
@@ -27,8 +28,11 @@ router.get('/:id', getServiceRequestById);
 // Update service request (admin only)
 router.put('/:id', adminOnly, updateServiceRequest);
 
-// Add comment to service request
-router.post('/:id/comments', addComment);
+// Delete service request (admin only)
+router.delete('/:id', deleteServiceRequest);
+
+// Add comment to service request (with optional image upload support - max 3 images)
+router.post('/:id/comments', upload.array('images', 3), addComment);
 
 // Mark admin reply as seen
 router.put('/:requestId/replies/:timelineIndex/seen', markReplyAsSeen);

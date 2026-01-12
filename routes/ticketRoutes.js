@@ -6,7 +6,8 @@ import {
   updateTicket,
   addComment,
   markReplyAsSeen,
-  markTicketsAsViewed
+  markTicketsAsViewed,
+  deleteTicket
 } from '../controllers/ticketController.js';
 import { protect, adminOnly } from '../middleware/auth.js';
 import { upload } from '../config/cloudinary.js';
@@ -28,8 +29,11 @@ router.get('/:id', getTicketById);
 // Update ticket (admin only)
 router.put('/:id', adminOnly, updateTicket);
 
-// Add comment to ticket
-router.post('/:id/comments', addComment);
+// Delete ticket (admin only)
+router.delete('/:id', deleteTicket);
+
+// Add comment to ticket (with optional image upload support - max 3 images)
+router.post('/:id/comments', upload.array('images', 3), addComment);
 
 // Mark admin reply as seen
 router.put('/:ticketId/replies/:timelineIndex/seen', markReplyAsSeen);

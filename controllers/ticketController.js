@@ -36,7 +36,7 @@ export const createTicket = async (req, res) => {
       // Local storage: construct path from filename
       return `/uploads/${file.filename}`;
     }) : [];
-    
+
     // Log for debugging (remove in production)
     if (req.files && req.files.length > 0) {
       console.log(`📸 Uploaded ${images.length} image(s)`);
@@ -151,19 +151,19 @@ export const updateTicket = async (req, res) => {
 
     // Prepare update object
     const updateData = {};
-    
+
     // Only update status if it's provided and different from current status
     if (status && status !== ticket.status) {
       updateData.status = status;
     }
-    
+
     // Only update assignedVisitAt if it's explicitly provided in the request
     // and is different from the current value
     if (assignedVisitAt !== undefined && assignedVisitAt !== null) {
       // Only update if the new value is different from the current value
       const currentAssignedAt = ticket.assignedVisitAt ? new Date(ticket.assignedVisitAt).toISOString() : null;
       const newAssignedAt = new Date(assignedVisitAt).toISOString();
-      
+
       if (currentAssignedAt !== newAssignedAt) {
         updateData.assignedVisitAt = assignedVisitAt;
       }
@@ -181,7 +181,7 @@ export const updateTicket = async (req, res) => {
       updateData,
       { new: true, timestamps: false }
     ).populate('userId', 'name companyName email phone address location');
-    
+
     if (!updatedTicket) {
       return res.status(404).json({ message: 'Ticket not found after update' });
     }
@@ -191,11 +191,11 @@ export const updateTicket = async (req, res) => {
       setImmediate(async () => {
         try {
           let replyMessage = '';
-          
+
           if (assignedVisitAt && (!oldVisitAt || new Date(assignedVisitAt).getTime() !== new Date(oldVisitAt).getTime())) {
             replyMessage += `A visit has been scheduled for your ticket.\n\n`;
           }
-          
+
           if (status && status !== oldStatus) {
             if (status === 'Closed') {
               replyMessage += `Your ticket has been closed as the service is completed.\n\n`;
@@ -204,7 +204,7 @@ export const updateTicket = async (req, res) => {
               replyMessage += `Your ticket status has been updated to: ${status}.\n\n`;
             }
           }
-          
+
           if (replyMessage) {
             if (status !== 'Closed') {
               replyMessage += `Please check your dashboard for more details.`;
@@ -246,9 +246,24 @@ export const addComment = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Get image URLs from uploaded files (Cloudinary or local)
+    const images = req.files ? req.files.map(file => {
+      if (file.path && typeof file.path === 'string' && file.path.startsWith('http')) {
+        return file.path;
+      }
+      if (file.secure_url) {
+        return file.secure_url;
+      }
+      if (file.url) {
+        return file.url;
+      }
+      return `/uploads/${file.filename}`;
+    }) : [];
+
     const userName = req.user.name;
     ticket.timeline.push({
       note,
+      images: images.length > 0 ? images : undefined,
       addedBy: userName,
       seenBy: []
     });
@@ -277,12 +292,38 @@ export const addComment = async (req, res) => {
   }
 };
 
+// Delete ticket (admin or owner)
+export const deleteTicket = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+
+    const ticket = await Ticket.findById(id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    // Allow deletion if user is admin or if user owns the ticket
+    if (user.role !== 'admin' && ticket.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    await Ticket.findByIdAndDelete(id);
+
+    res.json({ message: 'Ticket deleted successfully' });
+  } catch (error) {
+    console.error('Delete ticket error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // Mark admin reply as seen
 // Mark tickets as viewed by admin
 export const markTicketsAsViewed = async (req, res) => {
   try {
     const { ticketIds } = req.body;
-    
+
     if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
       return res.status(400).json({ message: 'Please provide an array of ticket IDs' });
     }

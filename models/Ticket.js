@@ -47,6 +47,10 @@ const ticketSchema = new mongoose.Schema({
       required: true,
       trim: true
     },
+    images: [{
+      type: String,
+      trim: true
+    }],
     addedBy: {
       type: String,
       required: true

@@ -149,11 +149,11 @@ export const updateServiceRequest = async (req, res) => {
       setImmediate(async () => {
         try {
           let replyMessage = '';
-          
+
           if (assignedVisitAt && (!oldVisitAt || new Date(assignedVisitAt).getTime() !== new Date(oldVisitAt).getTime())) {
             replyMessage += `A visit has been scheduled for your service request.\n\n`;
           }
-          
+
           if (status && status !== oldStatus) {
             if (status === 'Completed') {
               replyMessage += `Your service request has been completed.\n\n`;
@@ -164,7 +164,7 @@ export const updateServiceRequest = async (req, res) => {
               replyMessage += `Your service request status has been updated to: ${status}.\n\n`;
             }
           }
-          
+
           if (replyMessage) {
             if (status !== 'Completed' && status !== 'Rejected') {
               replyMessage += `Please check your dashboard for more details.`;
@@ -204,9 +204,24 @@ export const addComment = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Get image URLs from uploaded files (Cloudinary or local)
+    const images = req.files ? req.files.map(file => {
+      if (file.path && typeof file.path === 'string' && file.path.startsWith('http')) {
+        return file.path;
+      }
+      if (file.secure_url) {
+        return file.secure_url;
+      }
+      if (file.url) {
+        return file.url;
+      }
+      return `/uploads/${file.filename}`;
+    }) : [];
+
     const userName = req.user.name;
     serviceRequest.timeline.push({
       note,
+      images: images.length > 0 ? images : undefined,
       addedBy: userName,
       seenBy: []
     });
@@ -229,6 +244,32 @@ export const addComment = async (req, res) => {
     res.json(updatedRequest);
   } catch (error) {
     console.error('Add comment error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// Delete service request (admin or owner)
+export const deleteServiceRequest = async (req, res) => {
+  try {
+    const user = req.user;
+    const { id } = req.params;
+
+    const serviceRequest = await ServiceRequest.findById(id);
+
+    if (!serviceRequest) {
+      return res.status(404).json({ message: 'Service request not found' });
+    }
+
+    // Allow deletion if user is admin or if user owns the request
+    if (user.role !== 'admin' && serviceRequest.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    await ServiceRequest.findByIdAndDelete(id);
+
+    res.json({ message: 'Service request deleted successfully' });
+  } catch (error) {
+    console.error('Delete service request error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
