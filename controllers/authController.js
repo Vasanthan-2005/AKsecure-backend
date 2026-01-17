@@ -37,33 +37,19 @@ export const login = async (req, res) => {
         return res.status(401).json({ message: "Invalid admin credentials" });
       }
 
-      // find or create admin model entry
-      let adminEmail = `admin-${username}@system.local`;
-
-      let adminUser = await User.findOne({ email: adminEmail, role: "admin" });
-
-      if (!adminUser) {
-        adminUser = await User.create({
-          name: `Admin ${username}`,
-          companyName: "System Admin",
-          phone: `admin-${username}`, // Unique phone per admin user
-          email: adminEmail,
-          passwordHash: password, // hashed in pre-save hook
-          address: "System",
-          location: { lat: 0, lng: 0 },
-          role: "admin",
-        });
-      }
-
-      const token = generateToken(adminUser._id);
+      // Return admin session without saving to database to keep DB clean
+      const adminEmail = `admin-${username}@system.local`;
+      const adminId = `admin-session-${Buffer.from(username).toString('hex')}`;
+      const token = generateToken(adminId);
 
       return res.json({
         token,
         user: {
-          id: adminUser._id,
-          name: adminUser.name,
-          email: adminUser.email,
-          role: adminUser.role,
+          id: adminId,
+          name: `Admin ${username}`,
+          email: adminEmail,
+          role: "admin",
+          companyName: "System Admin"
         },
       });
     }

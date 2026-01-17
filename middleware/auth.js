@@ -15,6 +15,22 @@ export const protect = async (req, res, next) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Handle transient admin sessions (not in DB)
+      if (typeof decoded.id === 'string' && decoded.id.startsWith('admin-session-')) {
+        const hexUsername = decoded.id.replace('admin-session-', '');
+        const username = Buffer.from(hexUsername, 'hex').toString();
+        
+        req.user = {
+          _id: decoded.id,
+          name: `Admin ${username}`,
+          email: `admin-${username}@system.local`,
+          role: 'admin',
+          companyName: 'System Admin'
+        };
+        return next();
+      }
+
       req.user = await User.findById(decoded.id).select('-passwordHash');
       
       if (!req.user) {
