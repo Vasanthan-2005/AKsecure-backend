@@ -41,6 +41,9 @@ const serviceRequestSchema = new mongoose.Schema({
   assignedVisitAt: {
     type: Date
   },
+  completedAt: {
+    type: Date
+  },
   timeline: [{
     note: {
       type: String,
