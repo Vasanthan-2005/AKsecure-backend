@@ -65,7 +65,16 @@ const ticketSchema = new mongoose.Schema({
     seenBy: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
-    }]
+    }],
+    priceList: [{
+      sNo: Number,
+      description: String,
+      price: Number
+    }],
+    totalPrice: {
+      type: Number,
+      default: 0
+    }
   }],
   location: {
     lat: {

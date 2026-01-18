@@ -238,7 +238,7 @@ export const updateTicket = async (req, res) => {
 export const addComment = async (req, res) => {
   try {
     const { id } = req.params;
-    const { note } = req.body;
+    const { note, priceList, totalPrice } = req.body;
     const userId = req.user._id;
     const role = req.user.role;
 
@@ -271,11 +271,24 @@ export const addComment = async (req, res) => {
     }) : [];
 
     const userName = req.user.name;
+
+    // Parse priceList if it's a string (from multipart/form-data)
+    let parsedPriceList = undefined;
+    if (priceList) {
+      try {
+        parsedPriceList = typeof priceList === 'string' ? JSON.parse(priceList) : priceList;
+      } catch (e) {
+        console.error('Error parsing priceList:', e);
+      }
+    }
+
     ticket.timeline.push({
       note,
       images: images.length > 0 ? images : undefined,
       addedBy: userName,
-      seenBy: []
+      seenBy: [],
+      priceList: parsedPriceList,
+      totalPrice: totalPrice ? Number(totalPrice) : undefined
     });
 
     await ticket.save();
