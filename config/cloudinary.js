@@ -12,9 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Check if Cloudinary is configured
-const isCloudinaryConfigured = 
-  process.env.CLOUDINARY_CLOUD_NAME && 
-  process.env.CLOUDINARY_API_KEY && 
+const isCloudinaryConfigured =
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET;
 
 let storage;
@@ -33,7 +33,8 @@ if (isCloudinaryConfigured) {
     cloudinary: cloudinary,
     params: {
       folder: 'AKSecure', // Optional: organize uploads in a folder
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'],
+      resource_type: 'auto', // Auto-detect file type (image/raw/video)
       transformation: [{ width: 1000, height: 1000, crop: 'limit' }] // Optional: resize images
     }
   });
@@ -44,7 +45,7 @@ if (isCloudinaryConfigured) {
 } else {
   // Fallback to local storage if Cloudinary is not configured
   console.warn('⚠️ Cloudinary not configured, using local file storage');
-  
+
   // Create uploads directory if it doesn't exist
   const uploadsDir = path.join(__dirname, '../uploads');
   if (!fs.existsSync(uploadsDir)) {
@@ -64,14 +65,14 @@ if (isCloudinaryConfigured) {
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;
   const extname = allowedTypes.test(file.originalname.toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  const mimetype = allowedTypes.test(file.mimetype) || file.mimetype === 'application/pdf';
 
   if (extname && mimetype) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false);
+    cb(new Error('Only image files and PDFs are allowed!'), false);
   }
 };
 

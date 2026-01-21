@@ -4,7 +4,7 @@ import { sendNewServiceRequestNotification, sendServiceRequestConfirmation, send
 
 export const createServiceRequest = async (req, res) => {
   try {
-    const { category, title, description, preferredVisitAt, address, outletName, location } = req.body;
+    const { category, title, description, preferredVisitAt, address, outletName, location, cameraType, cameraCount } = req.body;
     const userId = req.user._id;
 
     if (!category || !title || !description || !address || !outletName || !location) {
@@ -41,7 +41,9 @@ export const createServiceRequest = async (req, res) => {
       location: {
         lat: location.lat,
         lng: location.lng
-      }
+      },
+      cameraType,
+      cameraCount
     });
 
     const populatedRequest = await ServiceRequest.findById(serviceRequest._id).populate('userId', 'name companyName email phone');

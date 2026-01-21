@@ -13,7 +13,7 @@ const ticketSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['CCTV', 'Fire Alarm', 'Security Alarm', 'Electrical', 'Plumbing', 'Air Conditioning'],
+    enum: ['CCTV', 'Fire Alarm', 'Security Alarm', 'Intruder Alarm', 'Electrical', 'Plumbing', 'Air Conditioning'],
     required: true
   },
   title: {
